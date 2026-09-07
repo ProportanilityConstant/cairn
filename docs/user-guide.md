@@ -22,7 +22,7 @@ With no AI provider configured, Cairn uses a built-in deterministic local-heuris
 Requirements: Node.js 20+ or Bun 1.1+ (the repo develops on either), npm.
 
 ```bash
-git clone https://github.com/<your-org>/cairn.git
+git clone https://github.com/ProportanilityConstant/cairn.git
 cd cairn
 npm install
 npm run build        # type-checks and builds all packages + apps

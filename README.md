@@ -61,7 +61,7 @@ Most "AI automation" tools share one flaw: they trust the model. Cairn takes the
 Requirements: Node ≥ 22.5 (or Bun ≥ 1.1), npm.
 
 ```bash
-git clone https://github.com/YOUR_ORG/cairn.git
+git clone https://github.com/ProportanilityConstant/cairn.git
 cd cairn
 npm install
 

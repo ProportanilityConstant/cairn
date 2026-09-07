@@ -3,6 +3,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/ProportanilityConstant/cairn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/ProportanilityConstant/cairn/ci.yml?branch=main&label=CI" alt="CI status"></a>
+  <a href="https://github.com/ProportanilityConstant/cairn/releases/latest"><img src="https://img.shields.io/github/v/release/ProportanilityConstant/cairn?sort=semver" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License: Apache-2.0"></a>
+  <img src="https://img.shields.io/badge/PRs-welcome-orange" alt="PRs welcome">
+</p>
+
+<p align="center">
   <strong>Evidence-first automation and QA.</strong><br/>
   AI plans. A deterministic engine executes. Evidence proves what happened.
 </p>

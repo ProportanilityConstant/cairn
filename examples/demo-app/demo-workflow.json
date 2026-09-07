@@ -10,5 +10,5 @@
     { "id": "verify_order", "name": "Verify order listed", "kind": "http.request", "config": { "url": "{{vars.baseUrl}}/orders", "assertions": [ { "target": "status", "op": "eq", "value": 200 }, { "target": "body_json", "path": "orders.0.item", "op": "eq", "value": "cairn-stone" } ] } },
     { "id": "annotate", "name": "Record result", "kind": "note", "config": { "text": "Demo workflow completed: probe, order creation, and listing all verified." } }
   ],
-  "variables": { "baseUrl": "http://127.0.0.1:5175" }
+  "variables": { "baseUrl": "http://127.0.0.1:5176" }
 }

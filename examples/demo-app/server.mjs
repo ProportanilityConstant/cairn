@@ -62,7 +62,7 @@ const server = createServer((req, res) => {
   json(404, { error: "not found" });
 });
 
-const port = parseInt(process.env.PORT ?? "5175", 10);
+const port = parseInt(process.env.PORT ?? "5176", 10);
 server.listen(port, "127.0.0.1", () => {
   console.log(`Cairn demo target listening on http://127.0.0.1:${port}`);
   console.log("  GET  /ping    health probe");

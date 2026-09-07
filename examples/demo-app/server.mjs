@@ -15,7 +15,7 @@
 import { createServer } from "node:http";
 
 let healthy = true;
-let orders = [{ id: "ord_1", item: "widget", qty: 2 }];
+let orders = [];
 let hits = 0;
 
 const server = createServer((req, res) => {

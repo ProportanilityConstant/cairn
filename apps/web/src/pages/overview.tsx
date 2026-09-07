@@ -23,12 +23,12 @@ export function OverviewPage() {
       <h2>Recent executions</h2>
       {dash?.recent.length
         ? <ExecutionTable executions={dash.recent} />
-        : <Empty>No executions yet. Create a project, add a workflow, and run it.</Empty>}
+        : <Empty>No executions yet. Create a project, add a workflow, and run it — the <Link to="/guide">Guide</Link> walks through it in five steps.</Empty>}
 
       <h2>Projects</h2>
       {projects?.length
         ? <div className="row">{projects.map((p) => <Link key={p.id} className="card" style={{ minWidth: 220 }} to={`/projects/${p.id}`}><strong>{p.name}</strong><div className="dim small">{p.description ?? ""}</div></Link>)}</div>
-        : <Empty>No projects yet.</Empty>}
+        : <Empty>No projects yet. Create the first one in <Link to="/projects">Projects</Link>.</Empty>}
     </>
   );
 }
@@ -59,6 +59,7 @@ export function ProjectsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<unknown>();
   const navigate = useNavigate();
 
   if (error) return <ErrorBanner error={error} />;
@@ -66,13 +67,14 @@ export function ProjectsPage() {
 
   async function create(): Promise<void> {
     if (!name.trim()) return;
-    setCreating(true);
+    setCreating(true); setCreateError(undefined);
     try {
       const p = await api.createProject(name.trim(), description || undefined);
       reload();
       setName(""); setDescription("");
       navigate(`/projects/${p.id}`);
-    } finally { setCreating(false); }
+    } catch (e) { setCreateError(e); }
+    finally { setCreating(false); }
   }
 
   return (
@@ -86,6 +88,7 @@ export function ProjectsPage() {
           <input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} aria-label="Project description" style={{ minWidth: 300 }} />
           <button className="primary" onClick={() => { void create(); }} disabled={creating || !name.trim()}>Create project</button>
         </div>
+        {createError ? <div className="mt"><ErrorBanner error={createError} /></div> : null}
       </div>
 
       <h2>Existing</h2>

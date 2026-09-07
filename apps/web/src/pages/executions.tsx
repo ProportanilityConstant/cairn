@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, TERMINAL_STATUSES, type EvidenceMeta, type Execution } from "../api.js";
-import { Empty, ErrorBanner, StatusBadge, useAsync, usePolling } from "../ui.js";
+import { Empty, ErrorBanner, Loading, StatusBadge, useAsync, usePolling } from "../ui.js";
 import { ExecutionTable } from "./overview.js";
 
 export function ExecutionsPage() {
@@ -25,7 +25,7 @@ export function ExecutionDetailPage() {
   const execution = polled ?? loaded;
 
   if (loadError) return <ErrorBanner error={loadError} />;
-  if (!execution) return null;
+  if (!execution) return <Loading label="Loading execution" />;
   const terminal = TERMINAL_STATUSES.includes(execution.status);
   if (terminal && poll) setPoll(false);
 
@@ -170,13 +170,14 @@ export function EvidencePage() {
     const all = await api.evidence(id!);
     return all.find((e) => e.id === evidenceId);
   }, [id, evidenceId]);
-  const { data: body } = useAsync(async () => {
+  const { data: body, error: bodyError } = useAsync(async () => {
     const res = await fetch(`/api/executions/${id}/evidence/${evidenceId}`);
+    if (!res.ok) throw new Error(`Evidence could not be loaded (HTTP ${res.status})`);
     return await res.json();
   }, [id, evidenceId]);
 
   if (error) return <ErrorBanner error={error} />;
-  if (!meta) return null;
+  if (!meta) return <Loading label="Loading evidence" />;
 
   return (
     <>
@@ -184,7 +185,9 @@ export function EvidencePage() {
       <p className="page-sub"><Link to={`/executions/${id}`}>Back to execution</Link> · step <span className="mono">{meta.stepId}</span> · {meta.size} bytes</p>
       {meta.contentType.startsWith("image/") && meta.type === "screenshot"
         ? <img src={`/api/executions/${id}/evidence/${evidenceId}`} alt={meta.label ?? "screenshot"} style={{ maxWidth: "100%", border: "1px solid var(--border)", borderRadius: 8 }} />
-        : <pre className="pre">{typeof body === "string" ? body : JSON.stringify(body, null, 2)}</pre>}
+        : bodyError
+          ? <ErrorBanner error={bodyError} />
+          : <pre className="pre">{typeof body === "string" ? body : body != null ? JSON.stringify(body, null, 2) : "Loading…"}</pre>}
     </>
   );
 }

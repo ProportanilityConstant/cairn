@@ -1,24 +1,34 @@
 import { useState } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { api } from "./api.js";
-import { Empty, ErrorBanner, Shell, timeAgo, useAsync, load } from "./ui.js";
+import { createBrowserRouter, Link, RouterProvider, useRouteError } from "react-router-dom";
+import { Empty, ErrorBanner, Shell, NotFound, RouteError, timeAgo, useAsync, load } from "./ui.js";
 import { OverviewPage, ProjectsPage, ProjectDashboardPage } from "./pages/overview.js";
 import { ProjectDetailPage, WorkflowDetailPage } from "./pages/WorkflowDetail.js";
 import { ExecutionsPage, ExecutionDetailPage, EvidencePage } from "./pages/executions.js";
+import { GuidePage } from "./pages/guide.js";
 
 function SettingsPage() {
   const { data: secrets, error, reload } = useAsync(() => api.secrets(), []);
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [saved, setSaved] = useState<string>();
+  const [opError, setOpError] = useState<unknown>();
 
   async function save(): Promise<void> {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { setSaved("Invalid name: letters, digits, underscores."); return; }
-    await api.setSecret(name, value);
-    setValue("");
-    setSaved(`Secret "${name}" stored (AES-256-GCM, encrypted at rest).`);
-    setName("");
-    reload();
+    setOpError(undefined);
+    try {
+      await api.setSecret(name, value);
+      setValue("");
+      setSaved(`Secret "${name}" stored (AES-256-GCM, encrypted at rest).`);
+      setName("");
+      reload();
+    } catch (e) { setOpError(e); }
+  }
+
+  async function remove(name: string): Promise<void> {
+    setOpError(undefined);
+    try { await api.deleteSecret(name); reload(); }
+    catch (e) { setOpError(e); }
   }
 
   return (
@@ -47,7 +57,7 @@ function SettingsPage() {
                     <tr key={s.name}>
                       <td className="mono">{s.name}</td>
                       <td className="dim">{timeAgo(s.createdAt)}</td>
-                      <td><button className="small danger" onClick={() => { void load(() => api.deleteSecret(s.name), reload, () => {}); }}>Delete</button></td>
+                      <td><button className="small danger" onClick={() => { void remove(s.name); }}>Delete</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -55,6 +65,7 @@ function SettingsPage() {
             </div>
           )
           : <Empty>No secrets stored.</Empty>}
+        {opError ? <ErrorBanner error={opError} /> : null}
       </div>
 
       <h2>AI provider</h2>
@@ -76,6 +87,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Shell />,
+    errorElement: <Shell><RouteErrorPage /></Shell>,
     children: [
       { index: true, element: <OverviewPage /> },
       { path: "projects", element: <ProjectsPage /> },
@@ -85,13 +97,24 @@ const router = createBrowserRouter([
       { path: "executions", element: <ExecutionsPage /> },
       { path: "executions/:id", element: <ExecutionDetailPage /> },
       { path: "executions/:id/evidence/:evidenceId", element: <EvidencePage /> },
+      { path: "guide", element: <GuidePage /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);
 
+/** Wraps the router-level 404 so the shell stays visible. */
+function NotFoundPage() {
+  return <NotFound />;
+}
+
+/** Router error boundary content (rendered inside the shell). */
+function RouteErrorPage() {
+  const err = useRouteError();
+  return <RouteError error={err} />;
+}
+
 export default function App() {
   return <RouterProvider router={router} />;
 }
-
-void api; // imported for side-effect-free typing consistency

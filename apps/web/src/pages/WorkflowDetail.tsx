@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, TERMINAL_STATUSES, type StepDef, type StepKindInfo, type WorkflowDef } from "../api.js";
-import { Empty, ErrorBanner, KindBadge, load, useAsync } from "../ui.js";
+import { Empty, ErrorBanner, KindBadge, Loading, useAsync } from "../ui.js";
 
 export function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -11,9 +11,11 @@ export function ProjectDetailPage() {
   const [intent, setIntent] = useState("");
   const [planNote, setPlanNote] = useState<string>();
   const [planning, setPlanning] = useState(false);
+  const [createError, setCreateError] = useState<unknown>();
 
   async function createBlank(): Promise<void> {
     if (!projectId) return;
+    setCreateError(undefined);
     const def: WorkflowDef = {
       id: `wf_${Math.random().toString(36).slice(2, 8)}`,
       name: "New workflow",
@@ -22,8 +24,10 @@ export function ProjectDetailPage() {
       steps: [{ id: "first_step", name: "First step", kind: "http.request", config: { url: "http://localhost:8080/", assertions: [{ target: "status", op: "eq", value: 200 }] } }],
       variables: {},
     };
-    const created = await api.createWorkflow(projectId, def);
-    navigate(`/workflows/${created.id}`);
+    try {
+      const created = await api.createWorkflow(projectId, def);
+      navigate(`/workflows/${created.id}`);
+    } catch (e) { setCreateError(e); }
   }
 
   async function createFromIntent(): Promise<void> {
@@ -63,6 +67,7 @@ export function ProjectDetailPage() {
           <span className="faint small">The draft is validated by the same engine rules as hand-written workflows — invalid steps are dropped, never guessed.</span>
         </div>
         {planNote ? <div className="hypothesis pre mt">{planNote}</div> : null}
+        {createError ? <div className="mt"><ErrorBanner error={createError} /></div> : null}
       </div>
 
       <h2>Existing</h2>
@@ -84,7 +89,7 @@ export function ProjectDetailPage() {
           </div>
         )
         : <Empty>No workflows yet in this project.</Empty>}
-      <div className="mt"><button onClick={() => { void load(() => api.workflows(projectId!), () => {}, () => {}); reload(); }}>Refresh</button></div>
+      <div className="mt"><button onClick={reload}>Refresh</button></div>
     </>
   );
 }
@@ -98,19 +103,21 @@ export function WorkflowDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>();
   const [running, setRunning] = useState(false);
+  const [runError, setRunError] = useState<unknown>();
   const [environment, setEnvironment] = useState("default");
 
   if (error) return <ErrorBanner error={error} />;
-  if (!data) return null;
+  if (!data) return <Loading label="Loading workflow" />;
   const wf = data.def;
 
   async function run(): Promise<void> {
     if (!id) return;
-    setRunning(true);
+    setRunning(true); setRunError(undefined);
     try {
       const { executionId } = await api.runWorkflow(id, environment, {});
       navigate(`/executions/${executionId}`);
-    } finally { setRunning(false); }
+    } catch (e) { setRunError(e); }
+    finally { setRunning(false); }
   }
 
   async function save(): Promise<void> {
@@ -138,6 +145,7 @@ export function WorkflowDetailPage() {
           <button className="primary" onClick={() => { void run(); }} disabled={running}>{running ? "Starting…" : "Run workflow"}</button>
         </div>
       </div>
+      {runError ? <div className="mt"><ErrorBanner error={runError} /></div> : null}
 
       <h2>Steps</h2>
       <div className="card">

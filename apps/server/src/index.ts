@@ -87,9 +87,11 @@ export async function buildServer(cfg: ServerConfig, opts?: { store?: Store }) {
       case "local":
         return new LocalHeuristicProvider();
       default:
-        throw new CairnError("E_CONFIG", "No AI provider is configured", {
-          hint: "Set CAIRN_AI_KIND (openai-compatible | anthropic | local) and its key/base URL. The 'local' kind is deterministic and offline.",
-        });
+        // No remote provider configured — fall back to the built-in local
+        // heuristics so the product never dead-ends. Responses always name
+        // their provider ("local-heuristic"), so the fallback is visible,
+        // never silent.
+        return new LocalHeuristicProvider();
     }
   }
 
@@ -151,7 +153,7 @@ export async function buildServer(cfg: ServerConfig, opts?: { store?: Store }) {
   }
 
   // ---------- routes ----------
-  app.get("/api/health", async () => ({ ok: true, version: "0.1.0", ai: cfg.ai.kind }));
+  app.get("/api/health", async () => ({ ok: true, version: "0.1.0", ai: cfg.ai.kind === "none" ? "local (built-in)" : cfg.ai.kind }));
 
   app.get("/api/step-kinds", async () => ({
     kinds: stepKinds.map((k) => ({
@@ -404,6 +406,19 @@ if (process.argv[1] && process.argv[1].endsWith("index.js")) {
   const cfg = loadConfig();
   const { app, store } = await buildServer(cfg);
   app.listen({ port: cfg.port, host: cfg.host }).then((addr) => {
+    const url = addr.replace("0.0.0.0", "127.0.0.1").replace("[::]", "127.0.0.1").replace("::", "127.0.0.1");
+    const aiLabel = cfg.ai.kind === "openai-compatible"
+      ? `openai-compatible (${cfg.ai.model ?? "default model"})`
+      : cfg.ai.kind === "anthropic"
+        ? `anthropic (${cfg.ai.model ?? "claude"})`
+        : "local heuristics (built-in, offline)";
+    process.stdout.write(`
+   /\\      cairn v0.1.0 — evidence-first automation & QA
+  /  \\     console   ${url}
+ / /\\ \\    data       ${resolve(cfg.dataDir)}
+/_/  \\_\\   ai          ${aiLabel}
+
+`);
     app.log.info(`Cairn server listening on ${addr} (data: ${resolve(cfg.dataDir)})`);
     void store;
   }).catch((err) => {

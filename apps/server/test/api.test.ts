@@ -185,4 +185,27 @@ describe("Cairn API", () => {
     expect(kinds).toContain("http.request");
     expect(kinds).toContain("browser.goto");
   });
+
+  it("drafts a valid workflow offline from an intent", async () => {
+    const intent = `Check that ${targetUrl}/ping returns healthy within 5000ms`;
+    const { status, json } = await api("POST", "/api/ai/plan", { projectId, intent });
+    expect(status).toBe(200);
+    const plan = json as { workflow: { id: string; steps: { kind: string; config: { url: string; assertions: { target: string; op: string; value: number }[] } }[] }; provider: string };
+    expect(plan.provider).toBe("local-heuristic");
+    const probe = plan.workflow.steps.find((s) => s.kind === "http.request")!;
+    expect(probe.config.url).toBe("{{vars.baseUrl}}/ping");
+    // The draft runs through the same validation the engine enforces.
+    const created = await api("POST", `/api/projects/${projectId}/workflows`, {
+      ...plan.workflow, id: "planned_smoke", variables: { ...plan.workflow.variables },
+    });
+    expect(created.status).toBe(201);
+    const del = await api("DELETE", "/api/workflows/planned_smoke");
+    expect(del.status).toBe(200);
+  });
+
+  it("returns 404 when deleting a workflow that does not exist", async () => {
+    const { status, json } = await api("DELETE", "/api/workflows/no_such_workflow");
+    expect(status).toBe(404);
+    expect(JSON.stringify(json)).toContain("E_NOT_FOUND");
+  });
 });

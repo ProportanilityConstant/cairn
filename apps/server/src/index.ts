@@ -233,7 +233,9 @@ export async function buildServer(cfg: ServerConfig, opts?: { store?: Store }) {
   });
 
   app.delete("/api/workflows/:id", async (req) => {
-    store.deleteWorkflow((req.params as { id: string }).id);
+    const id = (req.params as { id: string }).id;
+    if (!store.getWorkflow(id)) throw new CairnError("E_NOT_FOUND", "Workflow not found");
+    store.deleteWorkflow(id);
     return { ok: true };
   });
 

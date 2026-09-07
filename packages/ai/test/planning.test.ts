@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LocalHeuristicProvider, completeStructured, planDraftSchema, draftToWorkflow, localAnalysis } from "../src/index.js";
+import { localPlanDraft } from "../src/planning.js";
 import { AnthropicProvider } from "../src/providers/anthropic.js";
 import { OpenAICompatibleProvider } from "../src/providers/openai-compatible.js";
 import { CairnError, type Execution, type FailureRecord } from "@cairn/core";
@@ -71,6 +72,54 @@ describe("planner guardrails", () => {
     expect(() => draftToWorkflow({ name: "x", variables: [], steps: [{ id: "m", name: "M", kind: "nope", config: {} }] }, "p1")).toThrow(/no valid steps/);
   });
 });
+
+describe("local heuristic planner", () => {
+  const req = (intent: string, context?: string) => ({ intent, context, projectId: "p1" });
+
+  it("extracts the URL, endpoint and latency budget from the intent", () => {
+    const { draft, workflow } = localPlanDraftHeper("Check that http://127.0.0.1:5176/ping returns healthy within 500ms");
+    expect(draft.variables).toContainEqual({ name: "baseUrl", value: "http://127.0.0.1:5176" });
+    const probe = workflow.steps.find((s) => s.kind === "http.request")!;
+    expect(probe.config.url).toBe("{{vars.baseUrl}}/ping");
+    expect(probe.config.assertions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: "status", op: "eq", value: 200 }),
+        expect.objectContaining({ target: "latency_ms", op: "lte", value: 500 }),
+      ]),
+    );
+  });
+
+  it("defaults to a health probe when the intent names no endpoint", () => {
+    const { workflow } = localPlanDraftHeper("Watch my staging service at https://api.example.com");
+    const probe = workflow.steps.find((s) => s.kind === "http.request")!;
+    expect(probe.config.url).toBe("{{vars.baseUrl}}/health");
+  });
+
+  it("always drafts workflows that pass the engine's own validation", () => {
+    // draftToWorkflow runs assertWorkflowValid — if this returns, the engine accepted it.
+    const { workflow } = localPlanDraftHeper("Check http://127.0.0.1:5176/ping");
+    expect(workflow.steps.length).toBeGreaterThanOrEqual(2);
+    expect(workflow.steps.at(-1)!.kind).toBe("note");
+  });
+
+  it("is honest about a missing target instead of inventing one", () => {
+    const { draft } = localPlanDraftHeper("Check that the login flow works");
+    expect(draft.variables.find((v) => v.name === "baseUrl")!.value).toBe("");
+    const note = draft.steps.find((s) => s.id === "record_result")!;
+    expect(String(note.config.text)).toContain("Review every step");
+  });
+});
+
+/** Run a plan through the local provider end to end (bypass + validation). */
+function localPlanDraftHeper(intent: string) {
+  const draft = localPlanDraft(req(intent));
+  const workflow = draftToWorkflow(draft, "p1");
+  return { draft, workflow };
+}
+
+function req(intent: string, context?: string) {
+  return { intent, context, projectId: "p1" };
+}
 
 describe("local failure analysis", () => {
   const execution = {

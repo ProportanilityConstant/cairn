@@ -1,0 +1,14 @@
+{
+  "id": "demo_service_check",
+  "name": "Demo service check",
+  "description": "Probes the demo target, creates an order, verifies it appears. Run /chaos on the target first to see failure intelligence.",
+  "version": 1,
+  "projectId": "SET_ME",
+  "steps": [
+    { "id": "probe", "name": "Health probe", "kind": "http.request", "config": { "url": "{{vars.baseUrl}}/ping", "assertions": [ { "target": "status", "op": "eq", "value": 200 }, { "target": "body_json", "path": "status", "op": "eq", "value": "healthy" } ] } },
+    { "id": "create_order", "name": "Create order", "kind": "http.request", "config": { "url": "{{vars.baseUrl}}/orders", "method": "POST", "body": { "item": "cairn-stone", "qty": 1 }, "assertions": [ { "target": "status", "op": "eq", "value": 201 }, { "target": "body_json", "path": "id", "op": "exists" } ] } },
+    { "id": "verify_order", "name": "Verify order listed", "kind": "http.request", "config": { "url": "{{vars.baseUrl}}/orders", "assertions": [ { "target": "status", "op": "eq", "value": 200 }, { "target": "body_json", "path": "orders.0.item", "op": "eq", "value": "cairn-stone" } ] } },
+    { "id": "annotate", "name": "Record result", "kind": "note", "config": { "text": "Demo workflow completed: probe, order creation, and listing all verified." } }
+  ],
+  "variables": { "baseUrl": "http://127.0.0.1:5175" }
+}

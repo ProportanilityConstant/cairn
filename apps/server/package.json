@@ -1,0 +1,19 @@
+{
+  "name": "@cairn/server",
+  "version": "0.1.0",
+  "description": "Cairn server: REST API, SQLite persistence, execution queue, demo target.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.json && node dist/index.js"
+  },
+  "dependencies": {
+    "@cairn/ai": "workspace:*",
+    "@cairn/core": "workspace:*",
+    "@cairn/executor": "workspace:*",
+    "fastify": "^5.0.0",
+    "zod": "3.23.8"
+  }
+}

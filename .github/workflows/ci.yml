@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: latest }
+      - run: bun install --frozen-lockfile
+      - name: Type check
+        run: |
+          bunx tsc -b packages/core packages/ai packages/executor apps/server
+          bunx tsc -p apps/web/tsconfig.json
+      - name: Unit + integration tests
+        run: bunx vitest run
+      - name: Web build
+        run: cd apps/web && bunx vite build
+      - name: Server boots and answers health
+        run: |
+          CAIRN_SECRET_KEY=ci-secret-key-0123456789 CAIRN_DATA_DIR=$(mktemp -d) node apps/server/dist/index.js &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:5175/api/health && exit 0; sleep 1; done
+          echo "server did not become healthy" && exit 1
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f docker/Dockerfile -t cairn:ci .

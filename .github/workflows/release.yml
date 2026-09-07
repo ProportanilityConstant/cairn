@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx vitest run
+      - name: Build web + server
+        run: |
+          bunx tsc -b packages/core packages/ai packages/executor apps/server
+          cd apps/web && bunx vite build
+      - name: Package source tarball
+        run: git archive --format=tar.gz -o "cairn-${GITHUB_REF_NAME}.tar.gz" HEAD
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: cairn-*.tar.gz
+          generate_release_notes: true
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false # enable once the registry target is chosen
+          tags: cairn:${{ github.ref_name }}

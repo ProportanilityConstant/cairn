@@ -1,0 +1,19 @@
+{
+  "name": "@cairn/executor",
+  "version": "0.1.0",
+  "description": "Cairn execution engine: step runners (HTTP, browser), retries, timeouts, evidence collection.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "peerDependencies": {
+    "playwright-core": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright-core": { "optional": true }
+  },
+  "dependencies": { "@cairn/core": "workspace:*" }
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" role="img" aria-label="Cairn">
+  <rect width="64" height="64" rx="12" fill="#101210"/>
+  <path d="M32 9 L45 17.5 L41.5 26 L36 21.5 L32 24 L28 21.5 L22.5 26 L19 17.5 Z" fill="#e08f3c"/>
+  <path d="M23.5 30 L40.5 30 L45 40 L19 40 Z" fill="#c8ccc6"/>
+  <path d="M21 44 L43 44 L47 54 L17 54 Z" fill="#7d857c"/>
+  <text x="76" y="42" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="650" letter-spacing="1" fill="#e6e9e4">cairn</text>
+</svg>

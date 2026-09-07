@@ -1,0 +1,24 @@
+# Single-container deployment: server + console UI + SQLite volume.
+# The AI layer stays external by design — point CAIRN_AI_* at your own
+# provider (Ollama on the host, a vLLM box, or a managed API).
+services:
+  cairn:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    ports: ["5175:5175"]
+    environment:
+      # Required. Generate: openssl rand -base64 32
+      CAIRN_SECRET_KEY: ${CAIRN_SECRET_KEY:?set CAIRN_SECRET_KEY in .env}
+      # Optional AI: none | local | openai-compatible | anthropic
+      CAIRN_AI_KIND: ${CAIRN_AI_KIND:-none}
+      CAIRN_AI_BASE_URL: ${CAIRN_AI_BASE_URL:-}
+      CAIRN_AI_API_KEY: ${CAIRN_AI_API_KEY:-}
+      CAIRN_AI_MODEL: ${CAIRN_AI_MODEL:-}
+      # Optional: lock outbound automation to specific hosts (comma-separated)
+      CAIRN_NETWORK_ALLOWLIST: ${CAIRN_NETWORK_ALLOWLIST:-}
+      # Optional: require a bearer token on the API
+      CAIRN_API_TOKEN: ${CAIRN_API_TOKEN:-}
+    volumes:
+      - cairn-data:/data
+
+volumes:
+  cairn-data:

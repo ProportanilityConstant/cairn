@@ -48,9 +48,13 @@ export interface SqlDb {
 
 async function openDatabase(path: string): Promise<SqlDb> {
   const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== "undefined";
+  // Loaded via createRequire rather than dynamic import(): bundlers (Vite's
+  // import analysis inside vitest) cannot resolve built-in scheme specifiers
+  // like bun:sqlite, but runtime require() always can — on Bun and on Node.
+  const { createRequire } = await import("node:module");
+  const req = createRequire(import.meta.url);
   if (isBun) {
-    const spec = ["bun", ":sqlite"].join("");
-    const mod = (await import(spec)) as {
+    const mod = req("bun:sqlite") as {
       Database: new (p: string) => {
         exec(s: string): void;
         query(s: string): { run(...a: unknown[]): unknown; get(...a: unknown[]): unknown; all(...a: unknown[]): unknown[] };
@@ -65,8 +69,7 @@ async function openDatabase(path: string): Promise<SqlDb> {
       },
     };
   }
-  const spec2 = ["node", ":sqlite"].join(":");
-  const mod2 = (await import(/* webpackIgnore: true */ spec2)) as { DatabaseSync: new (p: string) => SqlDb };
+  const mod2 = req("node:sqlite") as { DatabaseSync: new (p: string) => SqlDb };
   return new mod2.DatabaseSync(path);
 }
 

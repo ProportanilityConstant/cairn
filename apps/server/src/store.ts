@@ -26,6 +26,20 @@ export interface WorkflowRow {
   updatedAt: string;
 }
 
+/** Map a raw workflows table row (snake_case columns) to the camelCase shape. */
+function rowToWorkflow(r: Record<string, unknown>): WorkflowRow {
+  return {
+    id: r.id as string,
+    projectId: r.project_id as string,
+    name: r.name as string,
+    description: (r.description as string | null) ?? null,
+    version: r.version as number,
+    def: r.def as string,
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+  };
+}
+
 export interface SecretRow {
   name: string;
   ciphertext: string;
@@ -199,15 +213,15 @@ export class Store {
       JOIN (SELECT id, MAX(version) AS mv FROM workflows WHERE project_id = ? GROUP BY id) latest
       ON w.id = latest.id AND w.version = latest.mv
       ORDER BY w.updated_at DESC
-    `).all(projectId) as unknown as WorkflowRow[];
-    return rows;
+    `).all(projectId) as unknown as Record<string, unknown>[];
+    return rows.map(rowToWorkflow);
   }
 
   getWorkflow(id: string): WorkflowRow | undefined {
     const row = this.db.prepare(`
       SELECT * FROM workflows WHERE id = ? ORDER BY version DESC LIMIT 1
-    `).get(id) as unknown as WorkflowRow | undefined;
-    return row;
+    `).get(id) as unknown as Record<string, unknown> | undefined;
+    return row ? rowToWorkflow(row) : undefined;
   }
 
   deleteWorkflow(id: string): void {

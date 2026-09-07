@@ -187,7 +187,18 @@ export function EvidencePage() {
         ? <img src={`/api/executions/${id}/evidence/${evidenceId}`} alt={meta.label ?? "screenshot"} style={{ maxWidth: "100%", border: "1px solid var(--border)", borderRadius: 8 }} />
         : bodyError
           ? <ErrorBanner error={bodyError} />
-          : <pre className="pre">{typeof body === "string" ? body : body != null ? JSON.stringify(body, null, 2) : "Loading…"}</pre>}
+          : <pre className="pre">{formatEvidenceBody(body)}</pre>}
     </>
   );
+}
+
+/** The API returns the evidence row; the payload lives in `data` as text. Parse and pretty-print it. */
+function formatEvidenceBody(body: unknown): string {
+  if (body == null) return "Loading…";
+  if (typeof body === "object" && "data" in body) {
+    const data = (body as { data?: unknown }).data;
+    if (typeof data !== "string") return JSON.stringify(data, null, 2);
+    try { return JSON.stringify(JSON.parse(data), null, 2); } catch { return data; }
+  }
+  return typeof body === "string" ? body : JSON.stringify(body, null, 2);
 }

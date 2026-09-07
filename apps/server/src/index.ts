@@ -54,9 +54,15 @@ export async function buildServer(cfg: ServerConfig, opts?: { store?: Store }) {
       reply.code(status).send({ error: err.toJSON() });
       return;
     }
-    const fe = rawErr as { statusCode?: number; validation?: unknown; message?: string };
+    const fe = rawErr as { statusCode?: number; validation?: unknown; message?: string; code?: string };
     if (fe.statusCode === 400 && fe.validation) {
       reply.code(400).send({ error: { code: "E_VALIDATION", message: "Request body failed validation", detail: fe.validation } });
+      return;
+    }
+    // Malformed body / bad content-type: Fastify parse errors surface as 400,
+    // sometimes without statusCode set on the error object.
+    if (fe.statusCode === 400 || (typeof fe.code === "string" && fe.code.startsWith("FST_ERR_") && fe.statusCode === undefined)) {
+      reply.code(400).send({ error: { code: "E_VALIDATION", message: fe.message ?? "Request could not be processed" } });
       return;
     }
     app.log.error(rawErr);

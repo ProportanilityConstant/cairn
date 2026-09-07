@@ -46,7 +46,75 @@ export interface PlanResult {
   provider: string;
 }
 
+/**
+ * Offline planner. Reads the intent for concrete signals — a target URL,
+ * health/ping endpoint names, a latency budget — and emits a small, honest
+ * draft. It never invents endpoints it didn't see; anything it couldn't
+ * determine is left for the user to fill in, and the note step says so.
+ */
+export function localPlanDraft(req: PlanRequest): PlanDraft {
+  const text = `${req.intent}\n${req.context ?? ""}`.trim();
+  const low = text.toLowerCase();
+
+  // Target: first URL in the intent or context. Use its origin as baseUrl and
+  // keep an explicit path only when the user named one.
+  const urlMatch = text.match(/https?:\/\/[^\s,;'")\]]+/i);
+  let baseUrl = "";
+  let path = "";
+  if (urlMatch) {
+    try {
+      const u = new URL(urlMatch[0].replace(/[.,;]+$/, ""));
+      baseUrl = u.origin;
+      path = u.pathname !== "/" ? u.pathname : "";
+    } catch { baseUrl = urlMatch[0].replace(/[.,;]+$/, ""); }
+  }
+
+  // Endpoint guess: explicit ping/health mentions win; otherwise the path from
+  // the URL; otherwise the conventional health path.
+  if (/\bping\b/.test(low)) path = path || "/ping";
+  else if (/\bhealth|healthy\b/.test(low)) path = path || "/health";
+  else if (!path) path = "/health";
+
+  const steps: PlanDraft["steps"] = [];
+
+  const assertions: Record<string, unknown>[] = [{ target: "status", op: "eq", value: 200 }];
+  const latency = text.match(/within\s+(\d+)\s*ms\b/i);
+  if (latency) assertions.push({ target: "latency_ms", op: "lte", value: Number(latency[1]) });
+
+  steps.push({
+    id: "probe",
+    name: `Probe ${path}`,
+    kind: "http.request",
+    config: { url: `{{vars.baseUrl}}${path}`, method: "GET", assertions },
+    rationale: `GET {{vars.baseUrl}}${path} must answer 200${latency ? ` within ${latency[1]}ms` : ""}. This is the one check the intent states clearly; the heuristic planner adds nothing it cannot see.`,
+  });
+
+  steps.push({
+    id: "record_result",
+    name: "Record result",
+    kind: "note",
+    config: { text: `Heuristic draft (local-heuristic rules-v1) for intent: ${req.intent.slice(0, 200)}. Review every step and set the baseUrl variable before running — this draft only automates what the intent stated explicitly.` },
+    rationale: "Every run leaves a note in the evidence trail marking this workflow as heuristic-drafted and not yet reviewed.",
+  });
+
+  const name = (req.intent.trim().split(/\n/)[0]?.slice(0, 80) || "Heuristic draft").replace(/\s+/g, " ");
+  return {
+    name: name.length > 0 ? name : "Heuristic draft",
+    description: `Drafted by the offline heuristic planner (rules-v1) from the stated intent. It checks ${path} on {{vars.baseUrl}} returns 200. Review and edit before running.`,
+    variables: [{ name: "baseUrl", value: baseUrl }],
+    steps,
+  };
+}
+
 export async function planWorkflow(provider: AIProvider, req: PlanRequest): Promise<PlanResult> {
+  // Deterministic offline planning: rule-based, honest, useful. Mirrors the
+  // analyzer's local-heuristic bypass so "Draft with AI" works with no model.
+  if (provider.id === "local-heuristic") {
+    const draft = localPlanDraft(req);
+    const workflow = draftToWorkflow(draft, req.projectId);
+    return { workflow, draft, provider: provider.id };
+  }
+
   const user = [
     `Intent: ${req.intent}`,
     req.context ? `Context about the target: ${req.context}` : "",

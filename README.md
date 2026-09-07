@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo/cairn-logo.svg" alt="Cairn" width="260" />
+  <img src="assets/hero.jpg" alt="Cairn — evidence-first automation and QA" width="100%" />
 </p>
 
 <p align="center">
@@ -103,6 +103,13 @@ npm run start
 5. Hit `/heal` and re-run. Green again.
 
 That loop — run, fail, understand, fix, verify — is the product.
+
+<p align="center">
+  <img src="assets/screenshots/failure-intelligence.jpg" alt="Failure intelligence: observed facts first, AI hypothesis below, always labeled" width="100%" />
+</p>
+<p align="center">
+  <em>Observed facts first. The AI hypothesis below, labeled with its provider and confidence — an inference, never dressed up as truth.</em>
+</p>
 
 ## How it works
 

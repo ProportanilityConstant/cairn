@@ -290,47 +290,78 @@ button.small { padding: 3px 9px; font-size: 12px; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 14px;
   opacity: 1;
-  transition: opacity 0.55s ease;
+  transition: opacity 0.45s ease;
 }
+#splash::before {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(224, 143, 60, 0.07), transparent 70%);
+  animation: glow-in 0.9s ease forwards;
+}
+@keyframes glow-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 #splash.splash-out { opacity: 0; pointer-events: none; }
-.splash-stack { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.splash-stack { display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; }
 .splash-stack .stone {
   height: 13px;
   border-radius: 3px;
   background: linear-gradient(180deg, #4a4f47, #343931);
   border: 1px solid var(--border-strong);
-  transform: translateY(-26px) scale(0.6);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  transform: translateY(-38px) scale(0.55);
   opacity: 0;
-  animation: stone-drop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) forwards;
+  animation: stone-drop 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
 }
-.splash-stack .s1 { width: 58px; animation-delay: 0.15s; }
-.splash-stack .s2 { width: 46px; animation-delay: 0.42s; }
-.splash-stack .s3 { width: 34px; background: linear-gradient(180deg, var(--accent), var(--accent-dim)); border-color: var(--accent-dim); animation-delay: 0.69s; }
+.splash-stack .s1 { width: 58px; animation-delay: 0.08s; }
+.splash-stack .s2 { width: 46px; animation-delay: 0.28s; }
+.splash-stack .s3 {
+  width: 34px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
+  border-color: var(--accent-dim);
+  box-shadow: 0 4px 14px rgba(224, 143, 60, 0.35);
+  animation-delay: 0.48s;
+}
 @keyframes stone-drop {
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  0% { transform: translateY(-38px) scale(0.55); opacity: 0; }
+  70% { opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 .splash-word {
-  margin-top: 10px;
+  margin-top: 8px;
   font-family: var(--mono);
   font-size: 22px;
-  letter-spacing: 0.35em;
-  text-indent: 0.35em;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
   color: var(--text);
   opacity: 0;
-  animation: splash-fade 0.6s ease 1.05s forwards;
+  animation: splash-fade 0.45s ease 0.72s forwards;
 }
 .splash-tag {
   font-size: 12px;
   color: var(--text-faint);
   letter-spacing: 0.08em;
   opacity: 0;
-  animation: splash-fade 0.6s ease 1.3s forwards;
+  animation: splash-fade 0.45s ease 0.88s forwards;
+}
+.splash-quote {
+  margin-top: 14px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--accent);
+  opacity: 0;
+  animation: quote-in 0.5s ease 0.98s forwards;
 }
 @keyframes splash-fade { to { opacity: 1; } }
+@keyframes quote-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 0.92; transform: translateY(0); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .splash-stack .stone, .splash-word, .splash-tag { animation-duration: 0.01s; animation-delay: 0s; }
+  .splash-stack .stone, .splash-word, .splash-tag, .splash-quote, #splash::before { animation-duration: 0.01s; animation-delay: 0s; }
 }
 
 /* ---------- loading + route error states ---------- */

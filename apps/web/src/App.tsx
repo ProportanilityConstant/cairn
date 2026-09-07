@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createBrowserRouter, Link, RouterProvider, useRouteError } from "react-router-dom";
+import { api } from "./api.js";
 import { Empty, ErrorBanner, Shell, NotFound, RouteError, timeAgo, useAsync, load } from "./ui.js";
 import { OverviewPage, ProjectsPage, ProjectDashboardPage } from "./pages/overview.js";
 import { ProjectDetailPage, WorkflowDetailPage } from "./pages/WorkflowDetail.js";
